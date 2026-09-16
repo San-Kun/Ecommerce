@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "ecommerce",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -24,6 +24,7 @@
     "prisma": "6.19.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "zod": "^4.6.5",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

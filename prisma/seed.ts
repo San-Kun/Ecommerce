@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient, ProductUnit, OrderStatus, PaymentStatus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -55,7 +56,7 @@ async function main() {
       email: "siti.rahayu@gmail.com",
       passwordHash: userPassword,
       phone: "081234567891",
-      role: Role.user,
+      role: Role.USER,
     },
   });
 
@@ -67,7 +68,7 @@ async function main() {
       email: "dewi.lestari@gmail.com",
       passwordHash: userPassword,
       phone: "081234567892",
-      role: Role.user,
+      role: Role.USER,
     },
   });
 
@@ -79,7 +80,7 @@ async function main() {
       email: "ratna.sari@gmail.com",
       passwordHash: userPassword,
       phone: "081234567893",
-      role: Role.user,
+      role: Role.USER,
     },
   });
 
@@ -693,9 +694,9 @@ async function main() {
   console.log("🌱 Seeding selesai!");
   console.log("\nAkun login untuk testing:");
   console.log("  Admin    -> admin@sayurku.id / admin123");
-  console.log("  user -> siti.rahayu@gmail.com / user123");
-  console.log("  user -> dewi.lestari@gmail.com / user123");
-  console.log("  user -> ratna.sari@gmail.com / user123");
+  console.log("  User -> siti.rahayu@gmail.com / user123");
+  console.log("  User -> dewi.lestari@gmail.com / user123");
+  console.log("  User -> ratna.sari@gmail.com / user123");
 }
 
 main()

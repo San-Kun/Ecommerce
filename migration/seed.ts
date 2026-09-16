@@ -1,4 +1,5 @@
-import { PrismaClient, ProductUnit, ProductStatus, OrderStatus, PaymentStatus, Role } from "@prisma/client";
+import 'dotenv/config';
+import { PrismaClient, ProductUnit, OrderStatus, PaymentStatus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -17,6 +18,17 @@ async function hashPassword(plain: string) {
 
 async function main() {
   console.log("🌱 Mulai seeding...");
+
+  // Optional: Bersihkan data lama agar idempotent saat re-seed
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.cartItem.deleteMany();
+  await prisma.cart.deleteMany();
+  await prisma.wishlist.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.paketMenuItem.deleteMany();
+  await prisma.paketMenu.deleteMany();
+  await prisma.address.deleteMany();
 
   // ------------------------------------------
   // 1. USERS
@@ -44,7 +56,7 @@ async function main() {
       email: "siti.rahayu@gmail.com",
       passwordHash: userPassword,
       phone: "081234567891",
-      role: Role.user,
+      role: Role.USER,
     },
   });
 
@@ -56,7 +68,7 @@ async function main() {
       email: "dewi.lestari@gmail.com",
       passwordHash: userPassword,
       phone: "081234567892",
-      role: Role.user,
+      role: Role.USER,
     },
   });
 
@@ -68,11 +80,11 @@ async function main() {
       email: "ratna.sari@gmail.com",
       passwordHash: userPassword,
       phone: "081234567893",
-      role: Role.user,
+      role: Role.USER,
     },
   });
 
-  console.log(`✅ ${3} users (1 admin, 2 user) dibuat`);
+  console.log("✅ 4 users (1 admin, 3 user) dibuat");
 
   // ------------------------------------------
   // 2. ADDRESSES
@@ -487,7 +499,7 @@ async function main() {
   const labuSiam = await prisma.product.findUniqueOrThrow({ where: { slug: "labu-siam" } });
 
   // ------------------------------------------
-  // 5. PAKET MENU (fitur diferensiasi)
+  // 5. PAKET MENU
   // ------------------------------------------
   const paketSop = await prisma.paketMenu.upsert({
     where: { slug: "paket-sayur-sop" },
@@ -576,7 +588,7 @@ async function main() {
   console.log("✅ Wishlist dibuat");
 
   // ------------------------------------------
-  // 8. CART (persisten) — user1 punya cart aktif
+  // 8. CART
   // ------------------------------------------
   const cart1 = await prisma.cart.upsert({
     where: { userId: user1.id },
@@ -596,17 +608,17 @@ async function main() {
   console.log("✅ Cart aktif untuk Siti Rahayu dibuat");
 
   // ------------------------------------------
-  // 9. ORDERS (riwayat pesanan dengan berbagai status)
+  // 9. ORDERS
   // ------------------------------------------
 
-  // Order 1 - selesai, sudah dibayar
+  // Order 1 - selesai, sudah dibayar (27.000 subtotal + 8.000 ongkir = 35.000)
   const order1 = await prisma.order.create({
     data: {
       orderNumber: "ORD-20260901-0001",
       status: OrderStatus.SELESAI,
-      subtotalAmount: 26000,
+      subtotalAmount: 27000,
       shippingCost: 8000,
-      totalAmount: 34000,
+      totalAmount: 35000,
       shippingSchedule: "Pagi, 07.00 - 09.00",
       paymentMethod: "Gopay",
       paymentStatus: PaymentStatus.BERHASIL,
@@ -652,7 +664,7 @@ async function main() {
     ],
   });
 
-  // Order 3 - menunggu pembayaran (baru dibuat)
+  // Order 3 - menunggu pembayaran
   const order3 = await prisma.order.create({
     data: {
       orderNumber: "ORD-20260915-0003",
@@ -682,9 +694,9 @@ async function main() {
   console.log("🌱 Seeding selesai!");
   console.log("\nAkun login untuk testing:");
   console.log("  Admin    -> admin@sayurku.id / admin123");
-  console.log("  user -> siti.rahayu@gmail.com / user123");
-  console.log("  user -> dewi.lestari@gmail.com / user123");
-  console.log("  user -> ratna.sari@gmail.com / user123");
+  console.log("  User -> siti.rahayu@gmail.com / user123");
+  console.log("  User -> dewi.lestari@gmail.com / user123");
+  console.log("  User -> ratna.sari@gmail.com / user123");
 }
 
 main()

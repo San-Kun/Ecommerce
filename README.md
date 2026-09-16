@@ -216,7 +216,7 @@ sayurku/
 
    Salin `.env.example` menjadi `.env`, lalu isi sesuai kredensial masing-masing:
    ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/sayurku"
+   DATABASE_URL="mysql://root:123@localhost:3306/sayurku"
    JWT_SECRET="ganti-dengan-secret-key-yang-kuat"
    CLOUDINARY_CLOUD_NAME="..."
    CLOUDINARY_API_KEY="..."
