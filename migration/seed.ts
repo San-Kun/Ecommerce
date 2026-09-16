@@ -22,7 +22,7 @@ async function main() {
   // 1. USERS
   // ------------------------------------------
   const adminPassword = await hashPassword("admin123");
-  const customerPassword = await hashPassword("customer123");
+  const userPassword = await hashPassword("user123");
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@sayurku.id" },
@@ -36,43 +36,43 @@ async function main() {
     },
   });
 
-  const customer1 = await prisma.user.upsert({
+  const user1 = await prisma.user.upsert({
     where: { email: "siti.rahayu@gmail.com" },
     update: {},
     create: {
       name: "Siti Rahayu",
       email: "siti.rahayu@gmail.com",
-      passwordHash: customerPassword,
+      passwordHash: userPassword,
       phone: "081234567891",
-      role: Role.CUSTOMER,
+      role: Role.user,
     },
   });
 
-  const customer2 = await prisma.user.upsert({
+  const user2 = await prisma.user.upsert({
     where: { email: "dewi.lestari@gmail.com" },
     update: {},
     create: {
       name: "Dewi Lestari",
       email: "dewi.lestari@gmail.com",
-      passwordHash: customerPassword,
+      passwordHash: userPassword,
       phone: "081234567892",
-      role: Role.CUSTOMER,
+      role: Role.user,
     },
   });
 
-  const customer3 = await prisma.user.upsert({
+  const user3 = await prisma.user.upsert({
     where: { email: "ratna.sari@gmail.com" },
     update: {},
     create: {
       name: "Ratna Sari",
       email: "ratna.sari@gmail.com",
-      passwordHash: customerPassword,
+      passwordHash: userPassword,
       phone: "081234567893",
-      role: Role.CUSTOMER,
+      role: Role.user,
     },
   });
 
-  console.log(`✅ ${3} users (1 admin, 2 customer) dibuat`);
+  console.log(`✅ ${3} users (1 admin, 2 user) dibuat`);
 
   // ------------------------------------------
   // 2. ADDRESSES
@@ -80,7 +80,7 @@ async function main() {
   await prisma.address.createMany({
     data: [
       {
-        userId: customer1.id,
+        userId: user1.id,
         label: "Rumah",
         fullAddress: "Jl. Kenanga No. 12, RT 003/RW 005, Kelurahan Cipete Utara, Kebayoran Baru, Jakarta Selatan, 12150",
         latitude: -6.2607,
@@ -88,7 +88,7 @@ async function main() {
         isDefault: true,
       },
       {
-        userId: customer1.id,
+        userId: user1.id,
         label: "Kantor",
         fullAddress: "Menara BCA Lt. 15, Jl. MH Thamrin No. 1, Jakarta Pusat, 10310",
         latitude: -6.1928,
@@ -96,7 +96,7 @@ async function main() {
         isDefault: false,
       },
       {
-        userId: customer2.id,
+        userId: user2.id,
         label: "Rumah",
         fullAddress: "Jl. Pahlawan No. 45, Kelurahan Bendungan Hilir, Tanah Abang, Jakarta Pusat, 10210",
         latitude: -6.2088,
@@ -104,7 +104,7 @@ async function main() {
         isDefault: true,
       },
       {
-        userId: customer3.id,
+        userId: user3.id,
         label: "Rumah",
         fullAddress: "Jl. Melati Indah No. 8, Kelurahan Duren Tiga, Pancoran, Jakarta Selatan, 12760",
         latitude: -6.2456,
@@ -115,8 +115,8 @@ async function main() {
     skipDuplicates: true,
   });
 
-  const address1 = await prisma.address.findFirstOrThrow({ where: { userId: customer1.id, isDefault: true } });
-  const address2 = await prisma.address.findFirstOrThrow({ where: { userId: customer2.id, isDefault: true } });
+  const address1 = await prisma.address.findFirstOrThrow({ where: { userId: user1.id, isDefault: true } });
+  const address2 = await prisma.address.findFirstOrThrow({ where: { userId: user2.id, isDefault: true } });
 
   console.log("✅ Alamat dibuat");
 
@@ -548,12 +548,12 @@ async function main() {
   // ------------------------------------------
   await prisma.review.createMany({
     data: [
-      { userId: customer1.id, productId: bayam.id, rating: 5, comment: "Segar banget, langsung dimasak sore itu juga." },
-      { userId: customer2.id, productId: bayam.id, rating: 4, comment: "Bagus, tapi ada beberapa daun yang layu." },
-      { userId: customer1.id, productId: kangkung.id, rating: 5, comment: "Kangkungnya renyah, cocok buat tumis terasi." },
-      { userId: customer3.id, productId: tomat.id, rating: 5, comment: "Tomatnya matang pas, manis dan nggak lembek." },
-      { userId: customer2.id, productId: kentang.id, rating: 5, comment: "Ukurannya seragam, enak buat balado." },
-      { userId: customer3.id, productId: cabaiMerah.id, rating: 4, comment: "Pedasnya pas, tapi pengiriman agak telat." },
+      { userId: user1.id, productId: bayam.id, rating: 5, comment: "Segar banget, langsung dimasak sore itu juga." },
+      { userId: user2.id, productId: bayam.id, rating: 4, comment: "Bagus, tapi ada beberapa daun yang layu." },
+      { userId: user1.id, productId: kangkung.id, rating: 5, comment: "Kangkungnya renyah, cocok buat tumis terasi." },
+      { userId: user3.id, productId: tomat.id, rating: 5, comment: "Tomatnya matang pas, manis dan nggak lembek." },
+      { userId: user2.id, productId: kentang.id, rating: 5, comment: "Ukurannya seragam, enak buat balado." },
+      { userId: user3.id, productId: cabaiMerah.id, rating: 4, comment: "Pedasnya pas, tapi pengiriman agak telat." },
     ],
     skipDuplicates: true,
   });
@@ -565,10 +565,10 @@ async function main() {
   // ------------------------------------------
   await prisma.wishlist.createMany({
     data: [
-      { userId: customer1.id, productId: cabaiMerah.id },
-      { userId: customer1.id, productId: daunKemangi.id },
-      { userId: customer2.id, productId: bayam.id },
-      { userId: customer3.id, productId: wortel.id },
+      { userId: user1.id, productId: cabaiMerah.id },
+      { userId: user1.id, productId: daunKemangi.id },
+      { userId: user2.id, productId: bayam.id },
+      { userId: user3.id, productId: wortel.id },
     ],
     skipDuplicates: true,
   });
@@ -576,12 +576,12 @@ async function main() {
   console.log("✅ Wishlist dibuat");
 
   // ------------------------------------------
-  // 8. CART (persisten) — customer1 punya cart aktif
+  // 8. CART (persisten) — user1 punya cart aktif
   // ------------------------------------------
   const cart1 = await prisma.cart.upsert({
-    where: { userId: customer1.id },
+    where: { userId: user1.id },
     update: {},
-    create: { userId: customer1.id },
+    create: { userId: user1.id },
   });
 
   await prisma.cartItem.createMany({
@@ -611,7 +611,7 @@ async function main() {
       paymentMethod: "Gopay",
       paymentStatus: PaymentStatus.BERHASIL,
       midtransTransactionId: "MT-TRX-0001",
-      userId: customer1.id,
+      userId: user1.id,
       addressId: address1.id,
       createdAt: new Date("2026-09-01T06:30:00Z"),
     },
@@ -637,7 +637,7 @@ async function main() {
       paymentMethod: "Bank Transfer",
       paymentStatus: PaymentStatus.BERHASIL,
       midtransTransactionId: "MT-TRX-0002",
-      userId: customer2.id,
+      userId: user2.id,
       addressId: address2.id,
       createdAt: new Date("2026-09-13T10:00:00Z"),
     },
@@ -664,7 +664,7 @@ async function main() {
       paymentMethod: null,
       paymentStatus: PaymentStatus.MENUNGGU,
       midtransTransactionId: null,
-      userId: customer1.id,
+      userId: user1.id,
       addressId: address1.id,
     },
   });
@@ -682,9 +682,9 @@ async function main() {
   console.log("🌱 Seeding selesai!");
   console.log("\nAkun login untuk testing:");
   console.log("  Admin    -> admin@sayurku.id / admin123");
-  console.log("  Customer -> siti.rahayu@gmail.com / customer123");
-  console.log("  Customer -> dewi.lestari@gmail.com / customer123");
-  console.log("  Customer -> ratna.sari@gmail.com / customer123");
+  console.log("  user -> siti.rahayu@gmail.com / user123");
+  console.log("  user -> dewi.lestari@gmail.com / user123");
+  console.log("  user -> ratna.sari@gmail.com / user123");
 }
 
 main()

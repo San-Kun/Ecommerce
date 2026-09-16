@@ -18,7 +18,7 @@ datasource db {
 // ============================================
 
 enum Role {
-  CUSTOMER
+  USER
   ADMIN
 }
 
@@ -59,7 +59,7 @@ model User {
   email        String   @unique @db.VarChar(255)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   phone        String?  @db.VarChar(20)
-  role         Role     @default(CUSTOMER)
+  role         Role     @default(USER)
   tokenVersion Int      @default(0) @map("token_version") // dinaikkan saat logout utk revoke refresh token lama
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

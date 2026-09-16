@@ -67,7 +67,7 @@ Ibu rumah tangga dan ART yang:
 ```
 sayurku/
 ├── app/
-│   ├── (customer)/                    # Route group untuk halaman customer
+│   ├── (user)/                    # Route group untuk halaman user
 │   │   ├── page.tsx                   # Halaman utama
 │   │   ├── kategori/
 │   │   │   └── page.tsx               # Halaman kategori + filter
