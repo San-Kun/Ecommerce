@@ -1,4 +1,8 @@
-import type { Product } from "@prisma/client";
+type NumericLike = number | string | { toString(): string };
+
+function toNumber(value: NumericLike): number {
+  return typeof value === "number" ? value : Number(value.toString());
+}
 
 const UNIT_LABEL: Record<string, string> = {
   GRAM: "gram",
@@ -16,15 +20,19 @@ export function formatUnit(unit: string): string {
  * Kelipatan kuantitas yang boleh dibeli untuk suatu produk.
  * Contoh: cabai stepQuantity = 0.1 (kg) -> tiap klik +/- nambah/kurang 0.1 kg.
  *         kangkung stepQuantity = 1 (ikat) -> tiap klik nambah/kurang 1 ikat utuh.
+ *
+ * Menerima number (dari client, setelah data diserialisasi API) ATAU
+ * Prisma.Decimal (dari server, hasil query langsung) -- keduanya kompatibel
+ * karena tinggal dikonversi lewat toNumber().
  */
-export function getQuantityStep(product: Pick<Product, "stepQuantity">): number {
-  const step = Number(product.stepQuantity);
+export function getQuantityStep(product: { stepQuantity: NumericLike }): number {
+  const step = toNumber(product.stepQuantity);
   return step > 0 ? step : 1; // fallback aman kalau data korup atau 0
 }
 
 /** Kuantitas minimum yang boleh dibeli untuk produk ini. */
-export function getMinOrderQuantity(product: Pick<Product, "minOrderQty">): number {
-  const min = Number(product.minOrderQty);
+export function getMinOrderQuantity(product: { minOrderQty: NumericLike }): number {
+  const min = toNumber(product.minOrderQty);
   return min > 0 ? min : 1;
 }
 
@@ -56,7 +64,12 @@ export function formatQuantity(quantity: number, unit: string): string {
   return `${quantity.toFixed(decimals)} ${formatUnit(unit)}`;
 }
 
-type StepperProduct = Pick<Product, "stepQuantity" | "minOrderQty" | "stock" | "unit">;
+type StepperProduct = {
+  stepQuantity: NumericLike;
+  minOrderQty: NumericLike;
+  stock: number;
+  unit: string;
+};
 
 /**
  * Kuantitas berikutnya kalau user klik tombol "+" pada stepper.
@@ -71,8 +84,8 @@ export function incrementQuantity(currentQty: number, product: StepperProduct): 
 /**
  * Kuantitas berikutnya kalau user klik tombol "-" pada stepper.
  * Tidak boleh turun di bawah kuantitas minimum pembelian.
- * (Kalau mau kuantitas bisa turun sampai 0 untuk hapus dari cart, cek hasilnya
- * di komponen pemanggil: kalau next === min dan user klik "-" lagi, baru hapus item.)
+ * (Kalau mau kuantitas bisa turun sampai 0 untuk hapus dari cart, itu aksi
+ * terpisah -- tombol "hapus" -- bukan hasil dari step turun sampai nol.)
  */
 export function decrementQuantity(currentQty: number, product: StepperProduct): number {
   const step = getQuantityStep(product);

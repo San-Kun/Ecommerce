@@ -1,20 +1,19 @@
-// c:/Ikhsan/Ecommerce/app/api/admin/orders/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { requireAuth, UnauthenticatedError } from "@/lib/auth";
 
-export async function GET() {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
+  let user;
   try {
-    // Logika mengambil data order admin
-    return NextResponse.json({ message: "Fetch orders success" });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    user = await requireAuth();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) {
+      return NextResponse.json({ error: "Silakan login terlebih dahulu" }, { status: 401 });
+    }
+    throw err;
   }
-}
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    return NextResponse.json({ message: "Order created", data: body });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create order" }, { status: 400 });
-  }
+  const { productId } = await params;
+  await prisma.wishlist.deleteMany({ where: { userId: user.sub, productId } });
+  return NextResponse.json({ ok: true });
 }
