@@ -4,9 +4,12 @@ import { requireAuth, UnauthenticatedError } from "@/lib/auth";
 import { updateCartItemSchema } from "@/lib/validators/cart";
 import { validateQuantity } from "@/lib/unit-helper";
 
-type RouteParams = { params: Promise<{ productId: string }> };
+// Definisikan Tipe Context sesuai standar Next.js 15
+type RouteContext = {
+  params: Promise<{ productId: string }>;
+};
 
-export async function PUT(req: NextRequest, { params }: RouteParams) {
+export async function PUT(req: NextRequest, context: RouteContext) {
   let user;
   try {
     user = await requireAuth();
@@ -17,7 +20,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     throw err;
   }
 
-  const { productId } = await params;
+  // Await params dari context
+  const { productId } = await context.params;
   const body = await req.json();
   const parsed = updateCartItemSchema.safeParse(body);
   if (!parsed.success) {
@@ -50,7 +54,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteParams) {
+export async function DELETE(_req: NextRequest, context: RouteContext) {
   let user;
   try {
     user = await requireAuth();
@@ -61,7 +65,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     throw err;
   }
 
-  const { productId } = await params;
+  const { productId } = await context.params;
   const cart = await prisma.cart.findUnique({ where: { userId: user.sub } });
   if (!cart) {
     return NextResponse.json({ error: "Keranjang tidak ditemukan" }, { status: 404 });
