@@ -30,7 +30,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     },
   });
 
-  // Produk NONAKTIF (soft-deleted) diperlakukan sama seperti tidak ditemukan di sisi customer
+  // Produk NONAKTIF (soft-deleted) diperlakukan sama seperti tidak ditemukan di sisi user
   if (!product || product.status === "NONAKTIF") notFound();
 
   const images = Array.isArray(product.images) ? (product.images as string[]) : [];

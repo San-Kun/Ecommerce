@@ -1,9 +1,155 @@
-// c:/Ikhsan/Ecommerce/app/admin/produk/page.tsx
+"use client";
 
-export default function AdminProdukPage() {
+import { useEffect, useState } from "react";
+import { useCartStore } from "@/store/useCartStore";
+
+type Address = { id: string; label: string; fullAddress: string; isDefault: boolean };
+
+const SCHEDULE_OPTIONS = ["Pagi, 07.00 - 09.00", "Siang, 11.00 - 13.00", "Sore, 15.00 - 17.00"];
+
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
+    value
+  );
+}
+
+export default function CheckoutPage() {
+  const { items, fetchCart, subtotal } = useCartStore();
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressId, setAddressId] = useState("");
+  const [schedule, setSchedule] = useState(SCHEDULE_OPTIONS[0]);
+  const [shipping, setShipping] = useState<{ cost: number; distanceKm: number } | null>(null);
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCart();
+    fetch("/api/addresses")
+      .then((r) => r.json())
+      .then((data) => {
+        const list: Address[] = data.items ?? [];
+        setAddresses(list);
+        const preferred = list.find((a) => a.isDefault) ?? list[0];
+        if (preferred) setAddressId(preferred.id);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!addressId) return;
+    setIsEstimating(true);
+    setShippingError(null);
+    setShipping(null);
+
+    fetch(`/api/shipping/estimate?addressId=${addressId}`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          setShippingError(data.error ?? "Gagal menghitung ongkir");
+          return;
+        }
+        setShipping({ cost: data.shippingCost, distanceKm: data.distanceKm });
+      })
+      .finally(() => setIsEstimating(false));
+  }, [addressId]);
+
+  async function handlePay() {
+    if (!addressId || !shipping) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addressId, shippingSchedule: schedule }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setSubmitError(data.error ?? "Gagal membuat pesanan");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Arahkan ke halaman pembayaran Midtrans (Snap hosted page)
+    window.location.href = data.redirectUrl;
+  }
+
+  if (items.length === 0) {
+    return <div className="p-8 text-center text-stone-400">Keranjang kamu kosong.</div>;
+  }
+
+  const total = subtotal() + (shipping?.cost ?? 0);
+
   return (
-    <div>
-      <h1>Daftar Produk Admin</h1>
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="text-xl font-semibold text-stone-900">Checkout</h1>
+
+      <div className="mt-6">
+        <label className="block text-sm font-medium text-stone-700">Alamat pengiriman</label>
+        {addresses.length === 0 ? (
+          <p className="mt-1 text-sm text-amber-600">Kamu belum punya alamat tersimpan.</p>
+        ) : (
+          <select
+            value={addressId}
+            onChange={(e) => setAddressId(e.target.value)}
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+          >
+            {addresses.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label} — {a.fullAddress}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-stone-700">Jadwal pengiriman</label>
+        <select
+          value={schedule}
+          onChange={(e) => setSchedule(e.target.value)}
+          className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+        >
+          {SCHEDULE_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-6 space-y-2 rounded-lg border border-stone-200 bg-white p-4">
+        <div className="flex justify-between text-sm">
+          <span className="text-stone-500">Subtotal</span>
+          <span className="text-stone-900">{formatRupiah(subtotal())}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-stone-500">Ongkos kirim {shipping ? `(${shipping.distanceKm} km)` : ""}</span>
+          <span className="text-stone-900">
+            {isEstimating ? "Menghitung..." : shipping ? formatRupiah(shipping.cost) : "-"}
+          </span>
+        </div>
+        {shippingError && <p className="text-sm text-red-600">{shippingError}</p>}
+        <div className="flex justify-between border-t border-stone-100 pt-2 font-semibold text-stone-900">
+          <span>Total</span>
+          <span>{formatRupiah(total)}</span>
+        </div>
+      </div>
+
+      {submitError && <p className="mt-3 text-sm text-red-600">{submitError}</p>}
+
+      <button
+        type="button"
+        onClick={handlePay}
+        disabled={isSubmitting || !shipping || addresses.length === 0}
+        className="mt-4 w-full rounded-md bg-emerald-700 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
+      >
+        {isSubmitting ? "Memproses..." : "Bayar Sekarang"}
+      </button>
     </div>
   );
 }

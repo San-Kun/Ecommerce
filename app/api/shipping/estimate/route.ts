@@ -1,20 +1,34 @@
-// c:/Ikhsan/Ecommerce/app/api/admin/orders/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { requireAuth, UnauthenticatedError } from "@/lib/auth";
+import { estimateShipping } from "@/lib/shipping";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  let user;
   try {
-    // Logika mengambil data order admin
-    return NextResponse.json({ message: "Fetch orders success" });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    user = await requireAuth();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) {
+      return NextResponse.json({ error: "Silakan login terlebih dahulu" }, { status: 401 });
+    }
+    throw err;
   }
-}
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    return NextResponse.json({ message: "Order created", data: body });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create order" }, { status: 400 });
+  const addressId = req.nextUrl.searchParams.get("addressId");
+  if (!addressId) {
+    return NextResponse.json({ error: "addressId wajib diisi" }, { status: 400 });
   }
+
+  const address = await prisma.address.findFirst({ where: { id: addressId, userId: user.sub } });
+  if (!address) {
+    return NextResponse.json({ error: "Alamat tidak ditemukan" }, { status: 404 });
+  }
+
+  const result = estimateShipping({ latitude: Number(address.latitude), longitude: Number(address.longitude) });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.reason }, { status: 422 });
+  }
+
+  return NextResponse.json({ distanceKm: result.distanceKm, shippingCost: result.cost });
 }

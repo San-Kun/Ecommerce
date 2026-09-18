@@ -1,20 +1,21 @@
-// c:/Ikhsan/Ecommerce/app/api/admin/orders/route.ts
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
-  try {
-    // Logika mengambil data order admin
-    return NextResponse.json({ message: "Fetch orders success" });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
+  const paketMenu = await prisma.paketMenu.findMany({
+    include: { items: { include: { product: { select: { status: true } } } } },
+    orderBy: { createdAt: "desc" },
+  });
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    return NextResponse.json({ message: "Order created", data: body });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create order" }, { status: 400 });
-  }
+  return NextResponse.json({
+    items: paketMenu.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      price: Number(p.price),
+      image: p.image,
+      itemCount: p.items.length,
+    })),
+  });
 }
