@@ -74,7 +74,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Arahkan ke halaman pembayaran Midtrans (Snap hosted page)
     window.location.href = data.redirectUrl;
   }
 
@@ -86,12 +85,22 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-xl font-semibold text-stone-900">Checkout</h1>
+      <h1 className="font-heading text-xl font-bold text-stone-900">Checkout</h1>
 
       <div className="mt-6">
-        <label className="block text-sm font-medium text-stone-700">Alamat pengiriman</label>
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-stone-700">Alamat pengiriman</label>
+          <a href="/profil/alamat" className="text-xs text-emerald-700 hover:underline">
+            Kelola alamat
+          </a>
+        </div>
         {addresses.length === 0 ? (
-          <p className="mt-1 text-sm text-amber-600">Kamu belum punya alamat tersimpan.</p>
+          <p className="mt-1 text-sm text-amber-600">
+            Kamu belum punya alamat tersimpan.{" "}
+            <a href="/profil/alamat/baru" className="underline">
+              Tambah sekarang
+            </a>
+          </p>
         ) : (
           <select
             value={addressId}
@@ -122,7 +131,7 @@ export default function CheckoutPage() {
         </select>
       </div>
 
-      <div className="mt-6 space-y-2 rounded-lg border border-stone-200 bg-white p-4">
+      <div className="mt-6 space-y-2 rounded-xl border border-dashed border-stone-300 bg-white p-4">
         <div className="flex justify-between text-sm">
           <span className="text-stone-500">Subtotal</span>
           <span className="text-stone-900">{formatRupiah(subtotal())}</span>
@@ -134,9 +143,9 @@ export default function CheckoutPage() {
           </span>
         </div>
         {shippingError && <p className="text-sm text-red-600">{shippingError}</p>}
-        <div className="flex justify-between border-t border-stone-100 pt-2 font-semibold text-stone-900">
+        <div className="flex items-center justify-between border-t border-dashed border-stone-300 pt-2 font-semibold text-stone-900">
           <span>Total</span>
-          <span>{formatRupiah(total)}</span>
+          <span className="price-tag bg-emerald-700 py-1.5 pr-4 text-white">{formatRupiah(total)}</span>
         </div>
       </div>
 

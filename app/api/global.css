@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palet "Pasar Pagi" -- terinspirasi sayur segar & suasana pasar tradisional pagi hari.
+     Ini menimpa skala warna bawaan Tailwind (emerald & stone), jadi SEMUA class
+     yang sudah dipakai di komponen (bg-emerald-700, text-stone-900, dst) otomatis
+     ikut berubah tanpa perlu edit satu-satu file komponen. */
+
+  --color-emerald-50: #f0f7ec;
+  --color-emerald-100: #dceed2;
+  --color-emerald-200: #b9dda8;
+  --color-emerald-300: #8fc77c;
+  --color-emerald-400: #66ac55;
+  --color-emerald-500: #468f3b;
+  --color-emerald-600: #34732d;
+  --color-emerald-700: #2a5d25;
+  --color-emerald-800: #234b1f;
+  --color-emerald-900: #1c3b19;
+  --color-emerald-950: #0f2110;
+
+  --color-stone-50: #f6f7f1;
+  --color-stone-100: #eef0e6;
+  --color-stone-200: #dfe2d3;
+  --color-stone-300: #c7cbb6;
+  --color-stone-400: #a2a78d;
+  --color-stone-500: #7c816a;
+  --color-stone-600: #5f6350;
+  --color-stone-700: #494c3d;
+  --color-stone-800: #35372c;
+  --color-stone-900: #24261e;
+  --color-stone-950: #17180f;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-stone-50);
+  color: var(--color-stone-900);
+}
+
+/* Bentuk label harga gantung ala pasar -- ujung runcing + lubang kecil (grommet) */
+.price-tag {
+  position: relative;
+  clip-path: polygon(16px 0, 100% 0, 100% 100%, 16px 100%, 0 50%);
+  padding-left: 24px;
+}
+.price-tag::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--color-stone-50);
+  transform: translateY(-50%);
+}
+
+/* Badge "stempel" untuk label organik/segar -- border putus-putus + sedikit miring */
+.stamp-badge {
+  border: 1.5px dashed currentColor;
+  border-radius: 9999px;
+  transform: rotate(-5deg);
+}
+
+/* Pola sulur daun samar untuk latar area yang belum ada foto produk */
+.leaf-pattern {
+  background-image: radial-gradient(circle at 1px 1px, var(--color-emerald-200) 1.5px, transparent 0);
+  background-size: 18px 18px;
+}

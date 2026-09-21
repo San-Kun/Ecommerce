@@ -97,8 +97,7 @@ export async function POST(req: NextRequest) {
   const shippingCost = shippingResult.cost;
 
   // Hitung subtotal per baris dibulatkan dulu, baru dijumlah -- supaya totalnya
-  // dijamin sama persis dengan jumlah item_details yang dikirim ke Midtrans
-  // (Midtrans menolak transaksi kalau gross_amount tidak cocok).
+  // dijamin sama persis dengan jumlah item_details yang dikirim ke Midtrans.
   const lineItems = cart.items.map((item) => ({
     item,
     lineSubtotal: Math.round(Number(item.product.price) * Number(item.quantity)),
@@ -107,8 +106,10 @@ export async function POST(req: NextRequest) {
   const totalAmount = subtotalAmount + shippingCost;
   const orderNumber = generateOrderNumber();
 
-  // Buat order, catat item, kurangi stok, dan kosongkan cart dalam satu transaksi
-  // supaya tidak ada kondisi setengah-jadi kalau salah satu langkah gagal.
+  // PENTING: cart TIDAK dikosongkan di sini. Order dibuat & stok dipotong dulu,
+  // tapi item cart baru dihapus SETELAH Midtrans konfirmasi berhasil (lihat bawah).
+  // Kalau cart dikosongkan di sini lalu Midtrans gagal, user kehilangan isi
+  // keranjangnya padahal belum pernah berhasil checkout sama sekali.
   const order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({
       data: {
@@ -133,9 +134,6 @@ export async function POST(req: NextRequest) {
     });
 
     for (const { item } of lineItems) {
-      // CATATAN: stock bertipe Int di skema, sementara produk KG bisa dibeli
-      // dalam pecahan (0.25 kg dst). Dibulatkan ke atas (Math.ceil) supaya
-      // konservatif -- lebih baik under-report stok daripada oversell.
       const wholeUnitsSold = Math.ceil(Number(item.quantity));
       await tx.product.update({
         where: { id: item.productId },
@@ -143,13 +141,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
     return created;
   });
 
-  // Minta Snap token dari Midtrans. Kalau gagal, batalkan order & kembalikan stok
-  // supaya tidak ada order "hantu" yang stoknya kepotong tapi tidak pernah bisa dibayar.
+  // Minta Snap token dari Midtrans. Kalau gagal, batalkan order & kembalikan stok --
+  // cart TIDAK disentuh sama sekali di jalur gagal ini, jadi user bisa langsung
+  // coba checkout lagi tanpa kehilangan apa-apa.
   try {
     const transaction = await snap.createTransaction({
       transaction_details: {
@@ -172,11 +169,16 @@ export async function POST(req: NextRequest) {
       ],
     });
 
+    // Baru sekarang cart dikosongkan, setelah Midtrans benar-benar konfirmasi sukses.
+    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+
     return NextResponse.json(
       { orderNumber: order.orderNumber, redirectUrl: transaction.redirect_url, token: transaction.token },
       { status: 201 }
     );
-  } catch {
+  } catch (err) {
+    console.error("Gagal createTransaction Midtrans:", err);
+
     await prisma.$transaction(async (tx) => {
       await tx.order.update({ where: { id: order.id }, data: { status: "DIBATALKAN", paymentStatus: "GAGAL" } });
       for (const { item } of lineItems) {

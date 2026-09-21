@@ -18,7 +18,7 @@ export default async function AdminProdukPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-stone-900">Produk</h1>
+          <h1 className="font-heading text-xl font-bold text-stone-900">Produk</h1>
           <p className="text-sm text-stone-500">{products.length} produk terdaftar</p>
         </div>
         <Link
@@ -37,7 +37,7 @@ export default async function AdminProdukPage() {
           categoryName: p.category.name,
           price: Number(p.price),
           unit: p.unit,
-          stock: p.stock,
+          stock: Number(p.stock),
           status: p.status,
           isOrganic: p.isOrganic,
         }))}

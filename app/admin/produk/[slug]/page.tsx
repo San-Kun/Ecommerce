@@ -17,7 +17,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ sl
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-stone-900">Edit produk</h1>
+        <h1 className="font-heading text-xl font-bold text-stone-900">Edit produk</h1>
         <p className="text-sm text-stone-500">{product.name}</p>
       </div>
       <ProductForm
@@ -37,7 +37,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ sl
           isOrganic: product.isOrganic,
           origin: product.origin ?? "",
           categoryId: product.categoryId,
-          imagesText: images.join("\n"),
+          images,
         }}
       />
     </div>
