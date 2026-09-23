@@ -5,12 +5,12 @@ import { usePathname } from "next/navigation";
 import { LeafIcon } from "@/components/icons/LeafIcon";
 
 const navItems = [
-  { href: "/admin", label: "Ringkasan" },
+  { href: "/admin", label: "Dashboard" },
   { href: "/admin/produk", label: "Produk" },
   { href: "/admin/paket-menu", label: "Paket Menu" },
   { href: "/admin/kategori", label: "Kategori" },
   { href: "/admin/pesanan", label: "Pesanan" },
-  { href: "/admin/pelanggan", label: "Pelanggan" },
+  { href: "/admin/pelanggan", label: "Customer" },
   { href: "/admin/review", label: "Review" },
 ];
 
