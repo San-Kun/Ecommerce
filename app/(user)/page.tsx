@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { RecentlyViewedShelf } from "@/components/product/RecentlyViewed";
 
 export default async function HomePage() {
   const [products, categories] = await Promise.all([
@@ -86,6 +87,8 @@ export default async function HomePage() {
             }))}
           />
         </div>
+
+        <RecentlyViewedShelf />
       </div>
     </div>
   );

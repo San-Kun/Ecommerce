@@ -50,9 +50,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     },
   });
 
-  // [DEBUG sementara] cek siapa yang login vs pemilik order
-  console.log("[riwayat/[id]] auth.sub=", auth.sub, "role=", auth.role, "orderUserId=", order?.userId, "orderFound=", Boolean(order));
-
   // Pesanan benar-benar tidak ada -> 404.
   if (!order) notFound();
 
@@ -82,9 +79,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <Link href="/profil/riwayat" className="text-sm text-emerald-700 hover:underline">
-        ← Kembali ke riwayat
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/profil/riwayat" className="text-sm text-emerald-700 hover:underline">
+          ← Kembali ke riwayat
+        </Link>
+        <Link
+          href={`/profil/riwayat/${order.id}/invoice`}
+          className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+        >
+          Lihat Invoice
+        </Link>
+      </div>
 
       <div className="mt-3 flex items-center justify-between">
         <h1 className="font-heading text-xl font-bold text-stone-900">{order.orderNumber}</h1>

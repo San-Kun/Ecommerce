@@ -49,6 +49,11 @@ enum PaymentStatus {
   GAGAL
 }
 
+enum VoucherType {
+  PERCENT // potongan persentase (value = persen, mis. 10 = 10%)
+  FIXED   // potongan nominal tetap (value = rupiah)
+}
+
 // ============================================
 // USERS & ADDRESSES
 // ============================================
@@ -277,6 +282,8 @@ model Order {
   status                OrderStatus   @default(PENDING)
   subtotalAmount        Decimal       @map("subtotal_amount") @db.Decimal(10, 2)
   shippingCost          Decimal       @map("shipping_cost") @db.Decimal(10, 2)
+  discountAmount        Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2) // potongan dari voucher
+  voucherCode           String?       @map("voucher_code") @db.VarChar(50) // snapshot kode voucher yang dipakai
   totalAmount           Decimal       @map("total_amount") @db.Decimal(10, 2)
   shippingSchedule      String?       @map("shipping_schedule") @db.VarChar(100) // "Pagi, 07.00 - 09.00"
   paymentMethod         String?       @map("payment_method") @db.VarChar(50) // "Gopay", "Bank Transfer"
@@ -313,4 +320,26 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+// ============================================
+// VOUCHER / KUPON DISKON
+// ============================================
+
+model Voucher {
+  id           String      @id @default(uuid()) @db.Char(36)
+  code         String      @unique @db.VarChar(50) // kode yang diketik user, mis. "HEMAT10"
+  description  String?     @db.VarChar(255)
+  type         VoucherType @default(PERCENT)
+  value        Decimal     @db.Decimal(10, 2) // persen (utk PERCENT) atau rupiah (utk FIXED)
+  minSpend     Decimal     @default(0) @map("min_spend") @db.Decimal(10, 2) // minimal subtotal agar bisa dipakai
+  maxDiscount  Decimal?    @map("max_discount") @db.Decimal(10, 2) // batas potongan (khusus PERCENT), null = tanpa batas
+  isActive     Boolean     @default(true) @map("is_active")
+  expiresAt    DateTime?   @map("expires_at") // null = tanpa kadaluarsa
+  usageLimit   Int?        @map("usage_limit") // total maksimal pemakaian, null = tak terbatas
+  usedCount    Int         @default(0) @map("used_count")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@map("vouchers")
 }

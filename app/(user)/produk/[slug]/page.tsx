@@ -6,6 +6,8 @@ import { AddToCartButton } from "@/components/product/AddToCartButton";
 import { WishlistButton } from "@/components/product/WishlistButton";
 import { ReviewForm } from "@/components/product/ReviewForm";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { RecordRecentlyViewed, RecentlyViewedShelf } from "@/components/product/RecentlyViewed";
 import { LeafIcon } from "@/components/icons/LeafIcon";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -56,9 +58,29 @@ export default async function ProductDetailPage({
 
   const currentUser = await getCurrentUser();
 
+  // Rekomendasi: produk lain di kategori yang sama, paling laris dulu.
+  const related = await prisma.product.findMany({
+    where: {
+      status: "AKTIF",
+      categoryId: product.categoryId,
+      id: { not: product.id },
+    },
+    orderBy: { soldCount: "desc" },
+    take: 8,
+  });
+
   const images = Array.isArray(product.images)
     ? (product.images as string[])
     : [];
+
+  const recentProduct = {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    price: Number(product.price),
+    unit: product.unit,
+    image: images[0] ?? null,
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -189,6 +211,33 @@ export default async function ProductDetailPage({
           </div>
         )}
       </div>
+
+      {/* Rekomendasi produk sejenis */}
+      {related.length > 0 && (
+        <section className="mt-12 border-t border-dashed border-stone-300 pt-8">
+          <h2 className="font-heading text-lg font-semibold text-stone-900">Produk sejenis</h2>
+          <div className="mt-4">
+            <ProductGrid
+              products={related.map((p) => ({
+                id: p.id,
+                name: p.name,
+                slug: p.slug,
+                price: Number(p.price),
+                unit: p.unit,
+                image: Array.isArray(p.images) ? ((p.images as string[])[0] ?? null) : null,
+                isOrganic: p.isOrganic,
+                stock: Number(p.stock),
+              }))}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Baru dilihat (client, dari localStorage) */}
+      <RecentlyViewedShelf excludeId={product.id} />
+
+      {/* Catat produk ini sebagai "baru dilihat" */}
+      <RecordRecentlyViewed product={recentProduct} />
     </div>
   );
 }

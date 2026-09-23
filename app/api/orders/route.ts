@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth, UnauthenticatedError } from "@/lib/auth";
 import { createOrderSchema } from "@/lib/validators/order";
 import { estimateShipping } from "@/lib/shipping";
+import { evaluateVoucher } from "@/lib/voucher";
 import { snap } from "@/lib/midtrans";
 
 // Provider pembayaran aktif. Default "manual": pakai Transfer Bank / COD tanpa
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const { addressId, shippingSchedule, paymentMethod } = parsed.data;
+  const { addressId, shippingSchedule, paymentMethod, voucherCode } = parsed.data;
 
   const [address, cart, userRecord] = await Promise.all([
     prisma.address.findFirst({ where: { id: addressId, userId: user.sub } }),
@@ -108,7 +109,23 @@ export async function POST(req: NextRequest) {
     lineSubtotal: Math.round(Number(item.product.price) * Number(item.quantity)),
   }));
   const subtotalAmount = lineItems.reduce((sum, li) => sum + li.lineSubtotal, 0);
-  const totalAmount = subtotalAmount + shippingCost;
+
+  // Voucher (opsional). Dihitung ulang di server -- angka dari client tidak dipercaya.
+  let discountAmount = 0;
+  let appliedVoucherCode: string | null = null;
+  let voucherId: string | null = null;
+  if (voucherCode && voucherCode.trim()) {
+    const voucher = await prisma.voucher.findUnique({ where: { code: voucherCode.trim().toUpperCase() } });
+    const result = evaluateVoucher(voucher, subtotalAmount);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.reason }, { status: 422 });
+    }
+    discountAmount = result.discount;
+    appliedVoucherCode = result.voucher.code;
+    voucherId = result.voucher.id;
+  }
+
+  const totalAmount = subtotalAmount - discountAmount + shippingCost;
   const orderNumber = generateOrderNumber();
 
   // Buat order + potong stok dalam satu transaksi. Untuk Transfer/COD, cart
@@ -122,6 +139,8 @@ export async function POST(req: NextRequest) {
         status: "PENDING",
         subtotalAmount,
         shippingCost,
+        discountAmount,
+        voucherCode: appliedVoucherCode,
         totalAmount,
         shippingSchedule,
         paymentMethod,
@@ -147,6 +166,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Catat pemakaian voucher (untuk kuota usageLimit).
+    if (voucherId) {
+      await tx.voucher.update({ where: { id: voucherId }, data: { usedCount: { increment: 1 } } });
+    }
+
     return created;
   });
 
@@ -168,6 +192,11 @@ export async function POST(req: NextRequest) {
             name: `${item.product.name} (${item.quantity} ${item.product.unit.toLowerCase()})`.slice(0, 50),
           })),
           { id: "ONGKIR", price: shippingCost, quantity: 1, name: "Ongkos Kirim" },
+          // Midtrans butuh jumlah item_details == gross_amount, jadi diskon
+          // dikirim sebagai baris ber-harga negatif.
+          ...(discountAmount > 0
+            ? [{ id: "DISKON", price: -discountAmount, quantity: 1, name: `Diskon ${appliedVoucherCode}`.slice(0, 50) }]
+            : []),
         ],
       });
 
@@ -188,6 +217,10 @@ export async function POST(req: NextRequest) {
             where: { id: item.productId },
             data: { stock: { increment: wholeUnitsSold }, soldCount: { decrement: wholeUnitsSold } },
           });
+        }
+        // Kembalikan kuota voucher karena order gagal dibuat.
+        if (voucherId) {
+          await tx.voucher.update({ where: { id: voucherId }, data: { usedCount: { decrement: 1 } } });
         }
       });
 

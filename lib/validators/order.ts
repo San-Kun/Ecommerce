@@ -11,6 +11,8 @@ export const createOrderSchema = z.object({
   shippingSchedule: z.string().min(1, "Pilih jadwal pengiriman"),
 
   paymentMethod: paymentMethodEnum,
+
+  voucherCode: z.string().max(50).optional(),
 });
 
 export const updateOrderStatusSchema = z.object({
