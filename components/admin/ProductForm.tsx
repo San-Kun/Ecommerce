@@ -104,6 +104,17 @@ export function ProductForm({
     }
   }
 
+  function removeImage(index: number) {
+    setValues((prev) => {
+      const urls = prev.imagesText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      urls.splice(index, 1);
+      return { ...prev, imagesText: urls.join("\n") };
+    });
+  }
+
   function handleNameChange(name: string) {
     update("name", name);
     if (!slugTouched) {
@@ -347,9 +358,22 @@ export function ProductForm({
               .map((s) => s.trim())
               .filter(Boolean)
               .map((url, i) => (
-                <div key={`${url}-${i}`} className="relative h-16 w-16 overflow-hidden rounded-md border border-stone-200">
+                <div key={`${url}-${i}`} className="group relative h-16 w-16 overflow-hidden rounded-md border border-stone-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={url} alt={`Gambar ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    aria-label={`Hapus gambar ${i + 1}`}
+                    className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600/90 text-xs font-bold leading-none text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    ×
+                  </button>
+                  {i === 0 && (
+                    <span className="absolute bottom-0 inset-x-0 bg-emerald-700/85 py-0.5 text-center text-[9px] font-medium text-white">
+                      Utama
+                    </span>
+                  )}
                 </div>
               ))}
           </div>
