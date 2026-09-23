@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWishlistStore } from "@/store/useWishlistStore";
+import { toast } from "@/store/useToastStore";
 
 export function WishlistButton({ productId }: { productId: string }) {
   const router = useRouter();
@@ -10,6 +11,7 @@ export function WishlistButton({ productId }: { productId: string }) {
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
   const items = useWishlistStore((s) => s.items);
+  const [beat, setBeat] = useState(0);
 
   // Muat status wishlist sekali saja per mount (kalau belum pernah di-fetch di halaman ini)
   useEffect(() => {
@@ -23,7 +25,16 @@ export function WishlistButton({ productId }: { productId: string }) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    toggleWishlist(productId);
+
+    const wasWishlisted = isWishlisted;
+    await toggleWishlist(productId);
+
+    if (wasWishlisted) {
+      toast.info("Dihapus dari wishlist");
+    } else {
+      setBeat((b) => b + 1);
+      toast.success("Ditambahkan ke wishlist");
+    }
   }
 
   return (
@@ -35,16 +46,17 @@ export function WishlistButton({ productId }: { productId: string }) {
       className={`rounded-full border p-2 transition-colors ${
         isWishlisted
           ? "border-red-200 bg-red-50 text-red-600"
-          : "border-stone-300 text-stone-400 hover:text-red-500"
+          : "border-stone-300 bg-white/80 text-stone-400 backdrop-blur-sm hover:text-red-500"
       }`}
     >
       <svg
+        key={beat}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill={isWishlisted ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth={1.8}
-        className="h-5 w-5"
+        className={`h-5 w-5 ${beat > 0 ? "animate-heart" : ""}`}
       >
         <path
           strokeLinecap="round"

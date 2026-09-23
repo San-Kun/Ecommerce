@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useWishlistStore } from "@/store/useWishlistStore";
 import { LeafIcon } from "@/components/icons/LeafIcon";
+import { EmptyState } from "@/components/common/EmptyState";
+import { HeartIcon } from "@/components/icons/nav";
+import { Skeleton } from "@/components/common/Skeleton";
 
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
@@ -20,18 +23,33 @@ export default function WishlistPage() {
   }, []);
 
   if (isLoading && items.length === 0) {
-    return <div className="p-8 text-center text-stone-400">Memuat wishlist...</div>;
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <Skeleton className="h-6 w-40" />
+        <div className="mt-4 space-y-3 rounded-xl border border-stone-200 bg-white p-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <Skeleton className="h-16 w-16" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-20 text-center">
-        <LeafIcon className="h-12 w-12 text-emerald-200" />
-        <p className="mt-4 text-stone-500">Belum ada produk di wishlist kamu.</p>
-        <Link href="/" className="mt-3 font-medium text-emerald-700 hover:underline">
-          Jelajahi produk
-        </Link>
-      </div>
+      <EmptyState
+        icon={<HeartIcon className="h-11 w-11 text-emerald-300" />}
+        title="Wishlist kamu masih kosong"
+        description="Tandai produk favoritmu dengan ikon hati agar mudah ditemukan lagi."
+        actionHref="/produk"
+        actionLabel="Jelajahi produk"
+      />
     );
   }
 

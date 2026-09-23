@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { LeafIcon } from "@/components/icons/LeafIcon";
+import { EmptyState } from "@/components/common/EmptyState";
 
 const statusLabel: Record<string, string> = {
   PENDING: "Menunggu pembayaran",
@@ -40,10 +40,12 @@ export default async function RiwayatPesananPage() {
       <h1 className="font-heading text-xl font-bold text-stone-900">Riwayat Pesanan</h1>
 
       {orders.length === 0 ? (
-        <div className="mt-16 flex flex-col items-center text-center">
-          <LeafIcon className="h-12 w-12 text-emerald-200" />
-          <p className="mt-4 text-stone-400">Belum ada pesanan.</p>
-        </div>
+        <EmptyState
+          title="Belum ada pesanan"
+          description="Pesanan yang kamu buat akan muncul di sini."
+          actionHref="/produk"
+          actionLabel="Mulai belanja"
+        />
       ) : (
         <div className="mt-4 space-y-3">
           {orders.map((order) => (

@@ -70,3 +70,63 @@ body {
   background-size: 18px 18px;
 }
 
+
+/* ============================================
+   Animasi & utilitas UI
+   ============================================ */
+
+/* Skeleton loading: gradasi bergerak halus untuk placeholder saat data dimuat */
+@keyframes sk-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-stone-100) 25%,
+    var(--color-stone-200) 37%,
+    var(--color-stone-100) 63%
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* Toast: masuk dari bawah dengan sedikit naik + fade */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-enter {
+  animation: toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Feedback tombol "tambah ke keranjang" -- denyut singkat saat berhasil */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.animate-pop {
+  animation: pop 0.3s ease-out;
+}
+
+/* Detak hati saat produk di-wishlist */
+@keyframes heart-beat {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  55% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.animate-heart {
+  animation: heart-beat 0.4s ease-out;
+}
+
+/* Fade-in lembut untuk konten yang baru muncul */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out both;
+}

@@ -5,8 +5,8 @@ import { prisma } from "@/lib/db";
 import { AddToCartButton } from "@/components/product/AddToCartButton";
 import { WishlistButton } from "@/components/product/WishlistButton";
 import { ReviewForm } from "@/components/product/ReviewForm";
+import { ProductGallery } from "@/components/product/ProductGallery";
 import { LeafIcon } from "@/components/icons/LeafIcon";
-import { SafeImage } from "@/components/common/SafeImage";
 import { getCurrentUser } from "@/lib/auth";
 
 const unitLabel: Record<string, string> = {
@@ -63,30 +63,13 @@ export default async function ProductDetailPage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="grid gap-8 md:grid-cols-2">
-        {/* Product Image */}
-        <div className="leaf-pattern relative aspect-square overflow-hidden rounded-xl bg-emerald-50">
-          {images[0] ? (
-            <SafeImage
-              src={images[0]}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <LeafIcon className="h-20 w-20 text-emerald-300" />
-            </div>
-          )}
-
-          {product.isOrganic && (
-            <span className="stamp-badge absolute left-4 top-4 bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700 backdrop-blur-sm">
-              organik
-            </span>
-          )}
-
-          <div className="absolute right-3 top-3">
-            <WishlistButton productId={product.id} />
-          </div>
-        </div>
+        {/* Product Gallery */}
+        <ProductGallery
+          images={images}
+          alt={product.name}
+          isOrganic={product.isOrganic}
+          overlay={<WishlistButton productId={product.id} />}
+        />
 
         {/* Product Information */}
         <div>
