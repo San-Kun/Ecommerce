@@ -12,6 +12,20 @@ async function hashPassword(plain: string) {
   return bcrypt.hash(plain, 10);
 }
 
+/**
+ * Kembalikan 3 URL gambar untuk sebuah produk memakai picsum.photos yang
+ * di-seed per produk + indeks. Dipilih karena SELALU mengembalikan gambar nyata
+ * dan stabil (layanan Unsplash Source sudah dimatikan dan sering 503).
+ * Tiap produk mendapat 3 gambar berbeda supaya galeri multi-foto terlihat.
+ *
+ * Catatan: gambar picsum bersifat generik (bukan foto sayur). Untuk foto sayur
+ * asli, upload lewat form admin (Cloudinary) atau ganti URL di sini dengan
+ * tautan gambar milikmu sendiri.
+ */
+function galleryFor(slug: string): string[] {
+  return [1, 2, 3].map((n) => `https://picsum.photos/seed/${slug}-${n}/800/800`);
+}
+
 // ============================================
 // MAIN
 // ============================================
@@ -174,7 +188,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 45,
-      images: ["https://images.example.com/bayam-hijau-1.jpg"],
+      images: galleryFor("bayam-hijau"),
       isOrganic: false,
       origin: "Sukabumi, Jawa Barat",
       categoryId: catDaun.id,
@@ -192,7 +206,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 60,
-      images: ["https://images.example.com/kangkung-1.jpg"],
+      images: galleryFor("kangkung"),
       isOrganic: false,
       origin: "Bogor, Jawa Barat",
       categoryId: catDaun.id,
@@ -210,7 +224,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 38,
-      images: ["https://images.example.com/sawi-hijau-1.jpg"],
+      images: galleryFor("sawi-hijau"),
       isOrganic: false,
       origin: "Lembang, Jawa Barat",
       categoryId: catDaun.id,
@@ -228,7 +242,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 30,
-      images: ["https://images.example.com/kemangi-1.jpg"],
+      images: galleryFor("daun-kemangi"),
       isOrganic: false,
       origin: "Cianjur, Jawa Barat",
       categoryId: catDaun.id,
@@ -247,7 +261,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 80,
-      images: ["https://images.example.com/tomat-merah-1.jpg"],
+      images: galleryFor("tomat-merah"),
       isOrganic: false,
       origin: "Malang, Jawa Timur",
       categoryId: catBuah.id,
@@ -265,7 +279,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 70,
-      images: ["https://images.example.com/wortel-1.jpg"],
+      images: galleryFor("wortel"),
       isOrganic: false,
       origin: "Lembang, Jawa Barat",
       categoryId: catBuah.id,
@@ -283,7 +297,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 55,
-      images: ["https://images.example.com/buncis-1.jpg"],
+      images: galleryFor("buncis"),
       isOrganic: false,
       origin: "Cipanas, Jawa Barat",
       categoryId: catBuah.id,
@@ -301,7 +315,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 65,
-      images: ["https://images.example.com/timun-1.jpg"],
+      images: galleryFor("timun"),
       isOrganic: false,
       origin: "Sukabumi, Jawa Barat",
       categoryId: catBuah.id,
@@ -319,7 +333,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 40,
-      images: ["https://images.example.com/labu-siam-1.jpg"],
+      images: galleryFor("labu-siam"),
       isOrganic: false,
       origin: "Garut, Jawa Barat",
       categoryId: catBuah.id,
@@ -338,7 +352,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 90,
-      images: ["https://images.example.com/kentang-1.jpg"],
+      images: galleryFor("kentang"),
       isOrganic: false,
       origin: "Dieng, Jawa Tengah",
       categoryId: catUmbi.id,
@@ -356,7 +370,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 50,
-      images: ["https://images.example.com/bawang-merah-1.jpg"],
+      images: galleryFor("bawang-merah"),
       isOrganic: false,
       origin: "Brebes, Jawa Tengah",
       categoryId: catUmbi.id,
@@ -374,7 +388,7 @@ async function main() {
       stepQuantity: 0.25,
       minOrderQty: 0.25,
       stock: 48,
-      images: ["https://images.example.com/bawang-putih-1.jpg"],
+      images: galleryFor("bawang-putih"),
       isOrganic: false,
       origin: "Tegal, Jawa Tengah",
       categoryId: catUmbi.id,
@@ -393,7 +407,7 @@ async function main() {
       stepQuantity: 0.1,
       minOrderQty: 0.1,
       stock: 35,
-      images: ["https://images.example.com/cabai-merah-1.jpg"],
+      images: galleryFor("cabai-merah-keriting"),
       isOrganic: false,
       origin: "Wonosobo, Jawa Tengah",
       categoryId: catBumbu.id,
@@ -411,7 +425,7 @@ async function main() {
       stepQuantity: 0.1,
       minOrderQty: 0.1,
       stock: 30,
-      images: ["https://images.example.com/cabai-rawit-1.jpg"],
+      images: galleryFor("cabai-rawit-hijau"),
       isOrganic: false,
       origin: "Blitar, Jawa Timur",
       categoryId: catBumbu.id,
@@ -429,7 +443,7 @@ async function main() {
       stepQuantity: 0.1,
       minOrderQty: 0.1,
       stock: 25,
-      images: ["https://images.example.com/jahe-1.jpg"],
+      images: galleryFor("jahe"),
       isOrganic: false,
       origin: "Boyolali, Jawa Tengah",
       categoryId: catBumbu.id,
@@ -448,7 +462,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 20,
-      images: ["https://images.example.com/selada-organik-1.jpg"],
+      images: galleryFor("selada-organik"),
       isOrganic: true,
       origin: "Lembang, Jawa Barat (kebun organik bersertifikat)",
       categoryId: catOrganik.id,
@@ -466,7 +480,7 @@ async function main() {
       stepQuantity: 1,
       minOrderQty: 1,
       stock: 18,
-      images: ["https://images.example.com/brokoli-organik-1.jpg"],
+      images: galleryFor("brokoli-organik"),
       isOrganic: true,
       origin: "Cipanas, Jawa Barat (kebun organik bersertifikat)",
       categoryId: catOrganik.id,
@@ -479,7 +493,10 @@ async function main() {
   for (const p of productData) {
     await prisma.product.upsert({
       where: { slug: p.slug },
-      update: {},
+      // Ikut perbarui gambar (dan field lain) saat re-seed, supaya produk yang
+      // sudah ada tetap mendapat set gambar terbaru -- kalau update:{} kosong,
+      // gambar lama tidak akan tertimpa.
+      update: { images: p.images },
       create: p as any,
     });
   }
@@ -503,37 +520,37 @@ async function main() {
   // ------------------------------------------
   const paketSop = await prisma.paketMenu.upsert({
     where: { slug: "paket-sayur-sop" },
-    update: {},
+    update: { image: "https://picsum.photos/seed/paket-sayur-sop/800/600" },
     create: {
       name: "Paket Sayur Sop",
       slug: "paket-sayur-sop",
       description: "Semua bahan siap untuk sayur sop hangat: wortel, kentang, buncis, dan bawang.",
       price: 28000,
-      image: "https://images.example.com/paket-sayur-sop.jpg",
+      image: "https://picsum.photos/seed/paket-sayur-sop/800/600",
     },
   });
 
   const paketTumisKangkung = await prisma.paketMenu.upsert({
     where: { slug: "paket-tumis-kangkung" },
-    update: {},
+    update: { image: "https://picsum.photos/seed/paket-tumis-kangkung/800/600" },
     create: {
       name: "Paket Tumis Kangkung",
       slug: "paket-tumis-kangkung",
       description: "Kangkung, bawang putih, dan cabai — tinggal tumis, siap disajikan.",
       price: 15000,
-      image: "https://images.example.com/paket-tumis-kangkung.jpg",
+      image: "https://picsum.photos/seed/paket-tumis-kangkung/800/600",
     },
   });
 
   const paketLodeh = await prisma.paketMenu.upsert({
     where: { slug: "paket-sayur-lodeh" },
-    update: {},
+    update: { image: "https://picsum.photos/seed/paket-sayur-lodeh/800/600" },
     create: {
       name: "Paket Sayur Lodeh",
       slug: "paket-sayur-lodeh",
       description: "Labu siam, kacang panjang pengganti buncis, dan bumbu dasar lodeh.",
       price: 22000,
-      image: "https://images.example.com/paket-sayur-lodeh.jpg",
+      image: "https://picsum.photos/seed/paket-sayur-lodeh/800/600",
     },
   });
 

@@ -50,8 +50,32 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     },
   });
 
-  // Hanya pemilik pesanan yang boleh melihat detailnya.
-  if (!order || order.userId !== auth.sub) notFound();
+  // [DEBUG sementara] cek siapa yang login vs pemilik order
+  console.log("[riwayat/[id]] auth.sub=", auth.sub, "role=", auth.role, "orderUserId=", order?.userId, "orderFound=", Boolean(order));
+
+  // Pesanan benar-benar tidak ada -> 404.
+  if (!order) notFound();
+
+  // Pesanan ada tapi bukan milik user ini (dan bukan admin) -> tampilkan pesan
+  // yang jelas, bukan 404 misterius yang membingungkan.
+  const isOwner = order.userId === auth.sub;
+  const isAdmin = auth.role === "ADMIN";
+  if (!isOwner && !isAdmin) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <h1 className="font-heading text-lg font-bold text-stone-900">Pesanan ini bukan milik akun kamu</h1>
+        <p className="mt-2 text-sm text-stone-500">
+          Kamu login sebagai akun yang berbeda dari pemilik pesanan {order.orderNumber}.
+        </p>
+        <Link
+          href="/profil/riwayat"
+          className="mt-5 inline-block rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
+        >
+          Lihat pesanan saya
+        </Link>
+      </div>
+    );
+  }
 
   const canCancel =
     (order.status === "PENDING" || order.status === "DIPROSES") && order.paymentStatus !== "BERHASIL";
