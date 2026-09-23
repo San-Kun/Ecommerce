@@ -38,4 +38,24 @@ export function uploadImage(buffer: Buffer): Promise<string> {
   });
 }
 
+/**
+ * Ambil public_id dari sebuah URL Cloudinary. Contoh:
+ * https://res.cloudinary.com/<cloud>/image/upload/v1699/sayurku/products/abc.jpg
+ * -> "sayurku/products/abc"
+ * Kembalikan null kalau URL bukan URL Cloudinary yang valid.
+ */
+export function cloudinaryPublicId(url: string): string | null {
+  if (!url.includes("res.cloudinary.com")) return null;
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-zA-Z0-9]+)?$/);
+  return match ? match[1] : null;
+}
+
+/** Hapus asset dari Cloudinary berdasarkan URL-nya. Aman dipanggil walau bukan URL Cloudinary. */
+export async function destroyImage(url: string): Promise<void> {
+  if (!isCloudinaryConfigured()) return;
+  const publicId = cloudinaryPublicId(url);
+  if (!publicId) return;
+  await cloudinary.uploader.destroy(publicId);
+}
+
 export { cloudinary };

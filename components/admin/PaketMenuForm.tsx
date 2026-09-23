@@ -63,6 +63,23 @@ export function PaketMenuForm({
     if (!slugTouched) update("slug", slugify(name));
   }
 
+  // Hapus file fisik (lokal/Cloudinary) di server. Fire-and-forget; URL eksternal diabaikan server.
+  function deletePhysicalImage(url: string) {
+    if (!url || (!url.startsWith("/uploads/") && !url.includes("res.cloudinary.com"))) return;
+    fetch("/api/upload", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).catch(() => {
+      // abaikan kegagalan hapus file
+    });
+  }
+
+  function removeImage() {
+    if (values.image) deletePhysicalImage(values.image);
+    update("image", "");
+  }
+
   async function handleUpload(files: FileList | null) {
     if (!files || files.length === 0) return;
     setUploadError(null);
@@ -76,6 +93,8 @@ export function PaketMenuForm({
         setUploadError(data.error ?? "Gagal mengunggah gambar");
         return;
       }
+      // Ganti gambar: hapus file lama (kalau milik kita) sebelum pasang yang baru.
+      if (values.image) deletePhysicalImage(values.image);
       update("image", data.url);
     } catch {
       setUploadError("Terjadi kesalahan jaringan saat mengunggah");
@@ -218,7 +237,7 @@ export function PaketMenuForm({
             <img src={values.image} alt="Pratinjau" className="h-full w-full object-cover" />
             <button
               type="button"
-              onClick={() => update("image", "")}
+              onClick={removeImage}
               aria-label="Hapus gambar"
               className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600/90 text-xs font-bold text-white"
             >

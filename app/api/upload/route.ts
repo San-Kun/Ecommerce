@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { tryAdmin } from "@/lib/api-auth";
-import { isCloudinaryConfigured, uploadImage } from "@/lib/cloudinary";
+import { isCloudinaryConfigured, uploadImage, destroyImage } from "@/lib/cloudinary";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -64,4 +64,50 @@ export async function POST(req: NextRequest) {
     console.error("Gagal menyimpan gambar lokal:", err);
     return NextResponse.json({ error: "Gagal menyimpan gambar, coba lagi" }, { status: 500 });
   }
+}
+
+// DELETE /api/upload - hapus file gambar fisik (khusus admin).
+// Body JSON: { url }. Menangani file lokal (/uploads/*) & asset Cloudinary.
+// URL eksternal lain (picsum/unsplash/dll) diabaikan -- tidak ada yang bisa dihapus.
+export async function DELETE(req: NextRequest) {
+  const auth = await tryAdmin();
+  if (auth.response) return auth.response;
+
+  let url: unknown;
+  try {
+    ({ url } = await req.json());
+  } catch {
+    return NextResponse.json({ error: "Body tidak valid" }, { status: 400 });
+  }
+
+  if (typeof url !== "string" || !url) {
+    return NextResponse.json({ error: "URL tidak valid" }, { status: 400 });
+  }
+
+  // File lokal di public/uploads
+  if (url.startsWith("/uploads/")) {
+    // Cegah path traversal: hanya izinkan nama file di dalam folder uploads.
+    const filename = path.basename(url);
+    const filePath = path.join(process.cwd(), "public", "uploads", filename);
+    try {
+      await unlink(filePath);
+    } catch {
+      // File mungkin sudah tidak ada -- anggap sukses (idempotent).
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  // Asset Cloudinary
+  if (url.includes("res.cloudinary.com")) {
+    try {
+      await destroyImage(url);
+    } catch (err) {
+      console.error("Gagal hapus asset Cloudinary:", err);
+      return NextResponse.json({ error: "Gagal menghapus gambar dari Cloudinary" }, { status: 502 });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  // URL eksternal lain: tidak ada file fisik milik kita untuk dihapus.
+  return NextResponse.json({ ok: true, note: "URL eksternal, tidak ada file yang dihapus" });
 }
