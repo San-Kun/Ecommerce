@@ -7,6 +7,13 @@ type Address = { id: string; label: string; fullAddress: string; isDefault: bool
 
 const SCHEDULE_OPTIONS = ["Pagi, 07.00 - 09.00", "Siang, 11.00 - 13.00", "Sore, 15.00 - 17.00"];
 
+type PaymentMethod = "TRANSFER" | "COD";
+
+const PAYMENT_OPTIONS: { value: PaymentMethod; label: string; description: string }[] = [
+  { value: "TRANSFER", label: "Transfer Bank", description: "Transfer manual, dikonfirmasi admin setelah bukti diterima" },
+  { value: "COD", label: "Bayar di Tempat (COD)", description: "Bayar tunai saat pesanan diantar" },
+];
+
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(
     value
@@ -18,6 +25,7 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addressId, setAddressId] = useState("");
   const [schedule, setSchedule] = useState(SCHEDULE_OPTIONS[0]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TRANSFER");
   const [shipping, setShipping] = useState<{ cost: number; distanceKm: number } | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
@@ -63,7 +71,7 @@ export default function CheckoutPage() {
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ addressId, shippingSchedule: schedule }),
+      body: JSON.stringify({ addressId, shippingSchedule: schedule, paymentMethod }),
     });
 
     const data = await res.json();
@@ -131,6 +139,35 @@ export default function CheckoutPage() {
         </select>
       </div>
 
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-stone-700">Metode pembayaran</label>
+        <div className="mt-2 space-y-2">
+          {PAYMENT_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition ${
+                paymentMethod === opt.value
+                  ? "border-emerald-600 bg-emerald-50"
+                  : "border-stone-300 bg-white hover:border-stone-400"
+              }`}
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value={opt.value}
+                checked={paymentMethod === opt.value}
+                onChange={() => setPaymentMethod(opt.value)}
+                className="mt-0.5 accent-emerald-600"
+              />
+              <span>
+                <span className="block font-medium text-stone-900">{opt.label}</span>
+                <span className="block text-xs text-stone-500">{opt.description}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-6 space-y-2 rounded-xl border border-dashed border-stone-300 bg-white p-4">
         <div className="flex justify-between text-sm">
           <span className="text-stone-500">Subtotal</span>
@@ -157,7 +194,11 @@ export default function CheckoutPage() {
         disabled={isSubmitting || !shipping || addresses.length === 0}
         className="mt-4 w-full rounded-md bg-emerald-700 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
       >
-        {isSubmitting ? "Memproses..." : "Bayar Sekarang"}
+        {isSubmitting
+          ? "Memproses..."
+          : paymentMethod === "COD"
+            ? "Buat Pesanan (Bayar di Tempat)"
+            : "Buat Pesanan & Lihat Instruksi Transfer"}
       </button>
     </div>
   );

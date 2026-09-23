@@ -49,12 +49,28 @@ export default async function RiwayatPesananPage() {
           {orders.map((order) => (
             <div key={order.id} className="rounded-xl border border-dashed border-stone-300 bg-white p-4">
               <div className="flex items-center justify-between">
-                <span className="font-heading font-semibold text-stone-900">{order.orderNumber}</span>
+                <a
+                  href={`/profil/riwayat/${order.id}`}
+                  className="font-heading font-semibold text-stone-900 hover:underline"
+                >
+                  {order.orderNumber}
+                </a>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle[order.status]}`}>
                   {statusLabel[order.status]}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-stone-500">{order.items.length} produk</p>
+              <p className="mt-1 text-sm text-stone-500">
+                {order.items.length} produk
+                {order.paymentMethod ? ` · ${order.paymentMethod === "COD" ? "Bayar di tempat" : "Transfer bank"}` : ""}
+              </p>
+              {order.paymentMethod === "TRANSFER" && order.paymentStatus === "MENUNGGU" && (
+                <a
+                  href={`/pembayaran/${order.orderNumber}`}
+                  className="mt-1 inline-block text-xs font-medium text-emerald-700 hover:underline"
+                >
+                  Lihat instruksi pembayaran →
+                </a>
+              )}
               <div className="mt-2 flex items-center justify-between border-t border-dashed border-stone-200 pt-2">
                 <span className="text-sm text-stone-500">
                   {new Date(order.createdAt).toLocaleDateString("id-ID", {
@@ -67,6 +83,12 @@ export default async function RiwayatPesananPage() {
                   {formatRupiah(Number(order.totalAmount))}
                 </span>
               </div>
+              <a
+                href={`/profil/riwayat/${order.id}`}
+                className="mt-2 inline-block text-xs font-medium text-emerald-700 hover:underline"
+              >
+                Lihat detail pesanan →
+              </a>
             </div>
           ))}
         </div>

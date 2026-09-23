@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
     await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
     return NextResponse.json(
-      { orderNumber: order.orderNumber, redirectUrl: transaction.redirect_url, token: transaction.token },
+      { orderNumber: order.orderNumber, redirectUrl: transaction.redirectUrl, token: transaction.token },
       { status: 201 }
     );
   } catch (err) {

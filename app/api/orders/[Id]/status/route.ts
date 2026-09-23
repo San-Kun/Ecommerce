@@ -4,7 +4,7 @@ import { requireAdmin, ForbiddenError, UnauthenticatedError } from "@/lib/auth";
 import { updateOrderStatusSchema } from "@/lib/validators/order";
 import type { OrderStatus } from "@prisma/client";
 
-type RouteParams = { params: Promise<{ id: string }> };
+type RouteParams = { params: Promise<{ Id: string }> };
 
 // Admin cuma boleh MENDORONG MAJU status pengiriman -- bukan mengubah status
 // pembayaran (itu wewenang webhook Midtrans) atau melompat status sembarangan.
@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     throw err;
   }
 
-  const { id } = await params;
+  const { Id: id } = await params;
   const body = await req.json();
   const parsed = updateOrderStatusSchema.safeParse(body);
   if (!parsed.success) {

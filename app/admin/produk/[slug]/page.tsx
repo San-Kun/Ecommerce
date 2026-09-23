@@ -37,7 +37,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ sl
           isOrganic: product.isOrganic,
           origin: product.origin ?? "",
           categoryId: product.categoryId,
-          images,
+          imagesText: images.join("\n"),
         }}
       />
     </div>

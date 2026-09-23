@@ -6,6 +6,10 @@ import { createOrderSchema } from "@/lib/validators/order";
 import { estimateShipping } from "@/lib/shipping";
 import { snap } from "@/lib/midtrans";
 
+// Provider pembayaran aktif. Default "manual": pakai Transfer Bank / COD tanpa
+// gateway eksternal. Set PAYMENT_PROVIDER=midtrans di .env kalau mau pakai Snap.
+const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER ?? "manual";
+
 function generateOrderNumber(): string {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const suffix = randomUUID().slice(0, 8).toUpperCase();
@@ -27,6 +31,7 @@ export async function GET() {
         orderNumber: o.orderNumber,
         status: o.status,
         paymentStatus: o.paymentStatus,
+        paymentMethod: o.paymentMethod,
         totalAmount: Number(o.totalAmount),
         itemCount: o.items.length,
         createdAt: o.createdAt,
@@ -57,7 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const { addressId, shippingSchedule } = parsed.data;
+  const { addressId, shippingSchedule, paymentMethod } = parsed.data;
 
   const [address, cart, userRecord] = await Promise.all([
     prisma.address.findFirst({ where: { id: addressId, userId: user.sub } }),
@@ -97,7 +102,7 @@ export async function POST(req: NextRequest) {
   const shippingCost = shippingResult.cost;
 
   // Hitung subtotal per baris dibulatkan dulu, baru dijumlah -- supaya totalnya
-  // dijamin sama persis dengan jumlah item_details yang dikirim ke Midtrans.
+  // konsisten dengan jumlah item_details (dipakai juga kalau provider = midtrans).
   const lineItems = cart.items.map((item) => ({
     item,
     lineSubtotal: Math.round(Number(item.product.price) * Number(item.quantity)),
@@ -106,10 +111,10 @@ export async function POST(req: NextRequest) {
   const totalAmount = subtotalAmount + shippingCost;
   const orderNumber = generateOrderNumber();
 
-  // PENTING: cart TIDAK dikosongkan di sini. Order dibuat & stok dipotong dulu,
-  // tapi item cart baru dihapus SETELAH Midtrans konfirmasi berhasil (lihat bawah).
-  // Kalau cart dikosongkan di sini lalu Midtrans gagal, user kehilangan isi
-  // keranjangnya padahal belum pernah berhasil checkout sama sekali.
+  // Buat order + potong stok dalam satu transaksi. Untuk Transfer/COD, cart
+  // langsung dikosongkan setelah order tercatat karena tidak ada gateway
+  // eksternal yang bisa gagal -- pembayaran diselesaikan belakangan (transfer
+  // dikonfirmasi admin, atau tunai saat COD diantar).
   const order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({
       data: {
@@ -119,6 +124,7 @@ export async function POST(req: NextRequest) {
         shippingCost,
         totalAmount,
         shippingSchedule,
+        paymentMethod,
         paymentStatus: "MENUNGGU",
         userId: user.sub,
         addressId: address.id,
@@ -144,52 +150,64 @@ export async function POST(req: NextRequest) {
     return created;
   });
 
-  // Minta Snap token dari Midtrans. Kalau gagal, batalkan order & kembalikan stok --
-  // cart TIDAK disentuh sama sekali di jalur gagal ini, jadi user bisa langsung
-  // coba checkout lagi tanpa kehilangan apa-apa.
-  try {
-    const transaction = await snap.createTransaction({
-      transaction_details: {
-        order_id: order.orderNumber,
-        gross_amount: totalAmount,
-      },
-      user_details: {
-        first_name: userRecord?.name ?? "Pelanggan",
-        email: userRecord?.email,
-        phone: userRecord?.phone ?? undefined,
-      },
-      item_details: [
-        ...lineItems.map(({ item, lineSubtotal }) => ({
-          id: item.productId,
-          price: lineSubtotal,
-          quantity: 1,
-          name: `${item.product.name} (${item.quantity} ${item.product.unit.toLowerCase()})`.slice(0, 50),
-        })),
-        { id: "ONGKIR", price: shippingCost, quantity: 1, name: "Ongkos Kirim" },
-      ],
-    });
+  // === Jalur Midtrans (opsional, di belakang saklar env) ===
+  if (PAYMENT_PROVIDER === "midtrans") {
+    try {
+      const transaction = await snap.createTransaction({
+        transaction_details: { order_id: order.orderNumber, gross_amount: totalAmount },
+        user_details: {
+          first_name: userRecord?.name ?? "Pelanggan",
+          email: userRecord?.email,
+          phone: userRecord?.phone ?? undefined,
+        },
+        item_details: [
+          ...lineItems.map(({ item, lineSubtotal }) => ({
+            id: item.productId,
+            price: lineSubtotal,
+            quantity: 1,
+            name: `${item.product.name} (${item.quantity} ${item.product.unit.toLowerCase()})`.slice(0, 50),
+          })),
+          { id: "ONGKIR", price: shippingCost, quantity: 1, name: "Ongkos Kirim" },
+        ],
+      });
 
-    // Baru sekarang cart dikosongkan, setelah Midtrans benar-benar konfirmasi sukses.
-    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+      await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
-    return NextResponse.json(
-      { orderNumber: order.orderNumber, redirectUrl: transaction.redirect_url, token: transaction.token },
-      { status: 201 }
-    );
-  } catch (err) {
-    console.error("Gagal createTransaction Midtrans:", err);
+      return NextResponse.json(
+        { orderNumber: order.orderNumber, redirectUrl: transaction.redirect_url, token: transaction.token },
+        { status: 201 }
+      );
+    } catch (err) {
+      console.error("Gagal createTransaction Midtrans:", err);
 
-    await prisma.$transaction(async (tx) => {
-      await tx.order.update({ where: { id: order.id }, data: { status: "DIBATALKAN", paymentStatus: "GAGAL" } });
-      for (const { item } of lineItems) {
-        const wholeUnitsSold = Math.ceil(Number(item.quantity));
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: wholeUnitsSold }, soldCount: { decrement: wholeUnitsSold } },
-        });
-      }
-    });
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({ where: { id: order.id }, data: { status: "DIBATALKAN", paymentStatus: "GAGAL" } });
+        for (const { item } of lineItems) {
+          const wholeUnitsSold = Math.ceil(Number(item.quantity));
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: wholeUnitsSold }, soldCount: { decrement: wholeUnitsSold } },
+          });
+        }
+      });
 
-    return NextResponse.json({ error: "Gagal membuat transaksi pembayaran, coba lagi" }, { status: 502 });
+      return NextResponse.json({ error: "Gagal membuat transaksi pembayaran, coba lagi" }, { status: 502 });
+    }
   }
+
+  // === Jalur Transfer Manual / COD (default) ===
+  // Order sudah tercatat, kosongkan keranjang.
+  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+  // TRANSFER -> arahkan ke halaman instruksi transfer.
+  // COD       -> langsung ke detail pesanan; bayar saat barang diantar.
+  const redirectUrl =
+    paymentMethod === "TRANSFER"
+      ? `/pembayaran/${order.orderNumber}`
+      : `/profil/riwayat`;
+
+  return NextResponse.json(
+    { orderNumber: order.orderNumber, paymentMethod, redirectUrl },
+    { status: 201 }
+  );
 }

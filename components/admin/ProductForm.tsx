@@ -64,9 +64,44 @@ export function ProductForm({
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   function update<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploadError(null);
+    setIsUploading(true);
+
+    const uploadedUrls: string[] = [];
+    try {
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) {
+          setUploadError(data.error ?? "Gagal mengunggah gambar");
+          break;
+        }
+        uploadedUrls.push(data.url);
+      }
+
+      if (uploadedUrls.length > 0) {
+        setValues((prev) => {
+          const existing = prev.imagesText.trim();
+          const combined = existing ? `${existing}\n${uploadedUrls.join("\n")}` : uploadedUrls.join("\n");
+          return { ...prev, imagesText: combined };
+        });
+      }
+    } catch {
+      setUploadError("Terjadi kesalahan jaringan saat mengunggah");
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   function handleNameChange(name: string) {
@@ -289,8 +324,39 @@ export function ProductForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-stone-700">
-          URL gambar <span className="font-normal text-stone-400">(satu link per baris)</span>
+        <label className="block text-sm font-medium text-stone-700">Gambar produk</label>
+
+        <div className="mt-1">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            disabled={isUploading}
+            onChange={(e) => handleUpload(e.target.files)}
+            className="block w-full text-sm text-stone-600 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-emerald-700 hover:file:bg-emerald-100"
+          />
+          {isUploading && <p className="mt-1 text-xs text-stone-500">Mengunggah gambar...</p>}
+          {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
+        </div>
+
+        {/* Preview gambar yang sudah ada / terunggah */}
+        {values.imagesText.trim() && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {values.imagesText
+              .split("\n")
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .map((url, i) => (
+                <div key={`${url}-${i}`} className="relative h-16 w-16 overflow-hidden rounded-md border border-stone-200">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Gambar ${i + 1}`} className="h-full w-full object-cover" />
+                </div>
+              ))}
+          </div>
+        )}
+
+        <label className="mt-3 block text-xs font-medium text-stone-500">
+          Atau tempel URL gambar manual (satu link per baris)
         </label>
         <textarea
           value={values.imagesText}

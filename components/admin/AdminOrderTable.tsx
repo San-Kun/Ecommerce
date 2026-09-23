@@ -10,6 +10,7 @@ type OrderRow = {
   totalAmount: number;
   itemCount: number;
   userName: string;
+  paymentMethod?: string | null;
 };
 
 const statusLabel: Record<OrderRow["status"], string> = {
@@ -69,6 +70,27 @@ export function AdminOrderTable({ initialOrders }: { initialOrders: OrderRow[] }
     });
   }
 
+  function handleConfirmPayment(orderId: string, outcome: "paid" | "failed") {
+    setErrorId(null);
+    startTransition(async () => {
+      const res = await fetch(`/api/orders/${orderId}/payment`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outcome }),
+      });
+      if (!res.ok) {
+        setErrorId(orderId);
+        return;
+      }
+      const data = (await res.json()) as { status: OrderRow["status"]; paymentStatus: OrderRow["paymentStatus"] };
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId ? { ...o, status: data.status, paymentStatus: data.paymentStatus } : o
+        )
+      );
+    });
+  }
+
   return (
     <div className="space-y-4">
       <select
@@ -108,6 +130,9 @@ export function AdminOrderTable({ initialOrders }: { initialOrders: OrderRow[] }
                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${paymentStyle[o.paymentStatus]}`}>
                       {o.paymentStatus}
                     </span>
+                    {o.paymentMethod && (
+                      <span className="mt-1 block text-xs text-stone-400">{o.paymentMethod}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${statusStyle[o.status]}`}>
@@ -115,17 +140,37 @@ export function AdminOrderTable({ initialOrders }: { initialOrders: OrderRow[] }
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {action ? (
-                      <button
-                        onClick={() => handleAdvance(o.id, action.next)}
-                        disabled={isPending}
-                        className="text-sm text-emerald-700 hover:underline disabled:opacity-50"
-                      >
-                        {action.label}
-                      </button>
-                    ) : (
-                      <span className="text-xs text-stone-400">—</span>
-                    )}
+                    <div className="flex flex-col items-start gap-1">
+                      {o.paymentStatus === "MENUNGGU" && o.status !== "DIBATALKAN" && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleConfirmPayment(o.id, "paid")}
+                            disabled={isPending}
+                            className="text-sm text-emerald-700 hover:underline disabled:opacity-50"
+                          >
+                            Konfirmasi Bayar
+                          </button>
+                          <button
+                            onClick={() => handleConfirmPayment(o.id, "failed")}
+                            disabled={isPending}
+                            className="text-sm text-red-600 hover:underline disabled:opacity-50"
+                          >
+                            Tolak
+                          </button>
+                        </div>
+                      )}
+                      {action ? (
+                        <button
+                          onClick={() => handleAdvance(o.id, action.next)}
+                          disabled={isPending}
+                          className="text-sm text-emerald-700 hover:underline disabled:opacity-50"
+                        >
+                          {action.label}
+                        </button>
+                      ) : o.paymentStatus !== "MENUNGGU" ? (
+                        <span className="text-xs text-stone-400">—</span>
+                      ) : null}
+                    </div>
                     {errorId === o.id && <p className="mt-1 text-xs text-red-600">Gagal memproses.</p>}
                   </td>
                 </tr>

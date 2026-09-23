@@ -72,6 +72,12 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password[0]}</p>}
       </div>
 
+      <div className="text-right">
+        <Link href="/forgot-password" className="text-xs text-emerald-700 hover:underline">
+          Lupa password?
+        </Link>
+      </div>
+
       <button
         type="submit"
         disabled={isSubmitting}

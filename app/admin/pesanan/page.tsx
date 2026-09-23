@@ -23,6 +23,7 @@ export default async function AdminPesananPage() {
           totalAmount: Number(o.totalAmount),
           itemCount: o.items.length,
           userName: o.user.name,
+          paymentMethod: o.paymentMethod,
         }))}
       />
     </div>

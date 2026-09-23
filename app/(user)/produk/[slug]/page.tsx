@@ -4,8 +4,10 @@ import { prisma } from "@/lib/db";
 
 import { AddToCartButton } from "@/components/product/AddToCartButton";
 import { WishlistButton } from "@/components/product/WishlistButton";
+import { ReviewForm } from "@/components/product/ReviewForm";
 import { LeafIcon } from "@/components/icons/LeafIcon";
 import { SafeImage } from "@/components/common/SafeImage";
+import { getCurrentUser } from "@/lib/auth";
 
 const unitLabel: Record<string, string> = {
   GRAM: "gram",
@@ -51,6 +53,8 @@ export default async function ProductDetailPage({
   if (!product || product.status === "NONAKTIF") {
     notFound();
   }
+
+  const currentUser = await getCurrentUser();
 
   const images = Array.isArray(product.images)
     ? (product.images as string[])
@@ -157,6 +161,19 @@ export default async function ProductDetailPage({
         <h2 className="font-heading text-lg font-semibold text-stone-900">
           Ulasan pembeli
         </h2>
+
+        {currentUser ? (
+          <div className="mt-4">
+            <ReviewForm slug={product.slug} />
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-stone-400">
+            <a href={`/login?redirect=/produk/${product.slug}`} className="text-emerald-700 hover:underline">
+              Masuk
+            </a>{" "}
+            untuk memberi ulasan.
+          </p>
+        )}
 
         {product.reviews.length === 0 ? (
           <p className="mt-3 text-sm text-stone-400">

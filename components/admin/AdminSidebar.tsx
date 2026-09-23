@@ -7,7 +7,10 @@ import { LeafIcon } from "@/components/icons/LeafIcon";
 const navItems = [
   { href: "/admin", label: "Ringkasan" },
   { href: "/admin/produk", label: "Produk" },
+  { href: "/admin/kategori", label: "Kategori" },
   { href: "/admin/pesanan", label: "Pesanan" },
+  { href: "/admin/pelanggan", label: "Pelanggan" },
+  { href: "/admin/review", label: "Review" },
 ];
 
 export function AdminSidebar({ userName }: { userName: string }) {
