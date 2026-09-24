@@ -17,7 +17,10 @@ export const createProductSchema = z.object({
   stepQuantity: z.coerce.number().positive().default(1),
   minOrderQty: z.coerce.number().positive().default(1),
   stock: z.coerce.number().int().min(0).default(0),
-  images: z.array(z.string().url()).optional(),
+  // Terima URL lengkap (http/https) ATAU path lokal hasil upload (mis. "/uploads/x.jpg")
+  images: z
+    .array(z.string().refine((s) => /^https?:\/\//.test(s) || s.startsWith("/"), "URL gambar tidak valid"))
+    .optional(),
   isOrganic: z.boolean().default(false),
   origin: z.string().max(150).optional(),
   categoryId: z.string().uuid("Kategori tidak valid"),

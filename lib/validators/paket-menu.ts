@@ -14,7 +14,12 @@ export const createPaketMenuSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug hanya boleh huruf kecil, angka, dan tanda hubung"),
   description: z.string().max(2000).optional(),
   price: z.coerce.number().positive("Harga harus lebih dari 0"),
-  image: z.string().url("URL gambar tidak valid").optional().or(z.literal("")),
+  // Terima URL lengkap ATAU path lokal hasil upload ("/uploads/..."), atau kosong
+  image: z
+    .string()
+    .refine((s) => /^https?:\/\//.test(s) || s.startsWith("/"), "URL gambar tidak valid")
+    .optional()
+    .or(z.literal("")),
   items: z.array(paketMenuItemSchema).min(1, "Pilih minimal 1 produk"),
 });
 
